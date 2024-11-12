@@ -45,8 +45,11 @@ h2{
     background-color: #ffffff;
     padding: 20px;
     border: 1px solid #b0b0b0;
-    width: 300px;
-    height: 300px;
-    overflow-y: scroll; 
-    text-align: left;
+    width: auto; 
+    height: auto; 
+    max-width: 90vw; 
+    max-height: 90vh; 
+    overflow: auto; 
+    text-align: left; 
 }
+
