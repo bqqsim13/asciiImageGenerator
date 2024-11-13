@@ -53,3 +53,13 @@ h2{
     text-align: left; 
 }
 
+#resolution {
+    margin: 10px 0;
+    width: 300px;
+}
+
+#resolutionValue {
+    font-weight: bold;
+    margin-left: 10px;
+}
+

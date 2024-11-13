@@ -1,88 +1,95 @@
-const imageUpload = document.getElementById('imageUpload');
-const canvas = document.getElementById('canvas'); //used for manipulating uploaded images
-const ctx = canvas.getContext('2d'); //rendering for 2D images
-const asciiOutput = document.getElementById('asciiOutput');
+const imageUpload = document.getElementById('imageUpload'); // File input element for uploading images
+const canvas = document.getElementById('canvas'); // Used for manipulating uploaded images
+const ctx = canvas.getContext('2d'); // Rendering for 2D images
+const asciiOutput = document.getElementById('asciiOutput'); // Div for displaying ASCII output
+const resolutionInput = document.getElementById('resolution'); // Slider input for adjusting ASCII resolution
+const resolutionValue = document.getElementById('resolutionValue'); // Span for showing the current resolution value
 
-//handling uploaded files:
+let resolution = parseInt(resolutionInput.value); // Default resolution value (8)
+
+// Event listener for updating resolution value when slider is moved
+resolutionInput.addEventListener('input', (event) => {
+    resolution = parseInt(event.target.value); // Update resolution value dynamically
+    resolutionValue.textContent = resolution; // Update resolution value in the UI
+
+    // Reconvert the image to ASCII art with the new resolution
+    if (canvas.width > 0 && canvas.height > 0) { // Ensure an image is already uploaded
+        const ascii = convertToAscii(); // Call the conversion function with updated resolution
+        asciiOutput.innerText = ascii; // Update the ASCII output
+    }
+});
+
+// Handling uploaded files
 imageUpload.addEventListener('change', (event) => {
-    //grab the first file in the fileList, basically the only one
+    // Grab the first file in the fileList (typically the only one)
     const file = event.target.files[0];
-    //read uploaded files
+    // Read uploaded files
     const reader = new FileReader();
-    //when file is read successfully, this should run
+    // When file is read successfully, this should run
     reader.onload = (e) => {
-        //create image element for the memory
+        // Create an image element in memory
         const img = new Image();
-        //upload image into memory
+        // Upload image into memory using the data URL
         img.src = e.target.result;
 
-        //ensures image is ready to be run (IMP!!!)
+        // Ensures image is ready to be processed (very important!)
         img.onload = () => {
-            //resize canvas (where ascii will be done) to same size as the uploaded image
+            // Resize canvas (where ASCII conversion will happen) to match the uploaded image dimensions
             canvas.width = img.width;
             canvas.height = img.height;
 
-            //draws the uploaded image starting from top left corner (origin in JS is at top left of items)
+            // Draw the uploaded image starting from the top-left corner (origin in JS is top-left)
             ctx.drawImage(img, 0, 0);
 
-            //move to ascii function once canva drawn
+            // Call the ASCII conversion function
             const ascii = convertToAscii();
 
-            //change da box size based on uploaded image
-            asciiOutput.style.width = `${img.width}px`; 
-            asciiOutput.style.height = `${img.height}px`; 
-            asciiOutput.style.maxWidth = '100%'; 
-            asciiOutput.style.overflowY = 'auto'; 
+            // Dynamically adjust the size of the ASCII output box to match the uploaded image dimensions
+            asciiOutput.style.width = `${img.width}px`;
+            asciiOutput.style.height = `${img.height}px`;
+            asciiOutput.style.maxWidth = '100%'; // Prevent the box from exceeding the viewport width
+            asciiOutput.style.overflowY = 'auto'; // Add a scrollbar if needed for large content
 
+            // Display the ASCII art in the output div
             asciiOutput.innerText = ascii;
         };
     };
-    //readonload needs to be defined for the file to actually be read
+    // Read the file as a Data URL (important to define onload first!)
     if (file) reader.readAsDataURL(file);
 });
 
+// ASCII conversion function (converts canvas pixels into ASCII characters)
 function convertToAscii() {
-    //retrive rgba data from the canva and its h/w
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    //extract only the rgba data (an array containing all pixel values)
-    const data = imageData.data;
-    //we need height and width data also
-    const width = imageData.width;
-    const height = imageData.height;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height); // Get pixel data from the canvas
+    const data = imageData.data; // Flat array of RGBA values
+    const width = imageData.width; // Image width
+    const height = imageData.height; // Image height
 
-    //asciiCharacters
-    const asciiChars = "@%#*+=-:. "; 
-    //output ascii
-    const asciiArray = [];
+    const asciiChars = "@%#*+=-:. "; // ASCII gradient from dark to light
+    const asciiArray = []; // Array to store ASCII rows
 
-    //reducing resolution (ascii don't need hi-def)
-    //8 is the standard skip value for ascii resolution, 
-    for (let y = 0; y < height; y += 4) { 
-        //string for ascii characters
-        let row = '';
-        //looping through every 8th column of the x (down the width)
-        for (let x = 0; x < width; x += 4) {
-            //each pixel is represented by 4 values (rgba), renmber multiply 4
-            const index = (y * width + x) * 4;
-            //contain rgb values
-            const r = data[index];
-            const g = data[index + 1];
-            const b = data[index + 2];
+    for (let y = 0; y < height; y += resolution) { // Loop over rows with step size based on resolution
+        let row = ''; // Initialize a new row of ASCII characters
+        for (let x = 0; x < width; x += resolution) { // Loop over columns with step size based on resolution
+            const index = (y * width + x) * 4; // Index of the current pixel in the flat RGBA array
+            const r = data[index]; // Red value
+            const g = data[index + 1]; // Green value
+            const b = data[index + 2]; // Blue value
 
-            //make image grayVersion (ez)
-            //i think take the rgb values and get average for grayscale intensity (how dark)
-            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-            const normalized = gray/255
+            // Calculate grayscale intensity (simple average method)
+            const gray = (r + g + b) / 3;
 
-            //hmmm
-            const char = asciiChars[Math.floor((normalized) * (asciiChars.length - 1))];
-            row += char;
+            // Map grayscale intensity to an ASCII character
+            const char = asciiChars[Math.floor((gray / 255) * (asciiChars.length - 1))];
+            row += char; // Append the ASCII character to the current row
         }
-        asciiArray.push(row);
+        asciiArray.push(row); // Add the completed row to the array
     }
 
+    // Join all rows with newline characters to form the complete ASCII art
     return asciiArray.join('\n');
 }
+
 
 const imgPreview = document.createElement('img');
 imgPreview.src = img.src;
@@ -90,5 +97,8 @@ document.body.appendChild(imgPreview);
 
 canvas.width = Math.min(img.width, 800);
 canvas.height = Math.min(img.height, 800);
+
+asciiOutput.style.fontSize = `${Math.max(10, resolution * 1.5)}px`;
+
 
 
